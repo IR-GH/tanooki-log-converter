@@ -514,6 +514,81 @@
     color: var(--muted2);
     letter-spacing: 1px;
   }
+  /* IMPORT REMINDER */
+  .import-reminder {
+    margin-top: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+
+  .reminder-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 18px;
+  }
+
+  .reminder-icon {
+    width: 30px; height: 30px;
+    background: rgba(0,212,170,0.1);
+    border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .reminder-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .reminder-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text-soft);
+    line-height: 1.5;
+  }
+
+  .step-num {
+    width: 22px; height: 22px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .reminder-step strong { color: var(--text); font-weight: 600; }
+
+  .reminder-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--warning);
+    background: rgba(210,153,34,0.07);
+    border: 1px solid rgba(210,153,34,0.2);
+    border-radius: 6px;
+    padding: 9px 14px;
+    line-height: 1.5;
+  }
+
 </style>
 </head>
 <body>
@@ -522,7 +597,7 @@
   <div class="logo">
     <span class="logo-wordmark">tanooki<span class="divider">/</span><span class="sub">converter</span></span>
   </div>
-  <div class="header-pill">v1.2 · Log Tool</div>
+  <div class="header-pill">v1.4 · Log Tool</div>
 </header>
 
 <div class="hero">
@@ -572,10 +647,10 @@
   <div class="section-label">Files</div>
 
   <div class="drop-zone" id="dropZone">
-    <input type="file" id="file-input" accept=".txt" multiple>
+    <input type="file" id="file-input" accept=".txt,.csv" multiple>
     <div class="drop-icon-wrap">📂</div>
-    <div class="drop-title">Drop .txt log files here</div>
-    <div class="drop-hint">or click to browse · <strong>.txt</strong> tanooki log files · multiple files supported</div>
+    <div class="drop-title">Drop log files here</div>
+    <div class="drop-hint">or click to browse · <strong>.txt</strong> or <strong>.csv</strong> · multiple files supported</div>
   </div>
 
   <div class="file-queue" id="fileList"></div>
@@ -603,6 +678,38 @@
   <div class="log-wrap" id="logWrap" style="display:none">
     <div class="section-label">Conversion Log</div>
     <div class="log-box" id="logBox"></div>
+  </div>
+
+  <div class="import-reminder">
+    <div class="reminder-header">
+      <span class="reminder-icon">💡</span>
+      <span>Importing into tanooki</span>
+    </div>
+    <div class="reminder-steps">
+      <div class="reminder-step">
+        <span class="step-num">1</span>
+        <span>In your tanooki project, click <strong>Import/Export</strong> → <strong>Import logs</strong></span>
+      </div>
+      <div class="reminder-step">
+        <span class="step-num">2</span>
+        <span>Toggle <strong>Set Frame Rate</strong> ON — this is required for correct TC alignment</span>
+      </div>
+      <div class="reminder-step">
+        <span class="step-num">3</span>
+        <span>Set the frame rate to match your shoot — e.g. <strong id="reminderFps">29.97</strong></span>
+      </div>
+      <div class="reminder-step">
+        <span class="step-num">4</span>
+        <span>Set <strong>Drop Frame</strong> <span id="reminderDf">ON</span> to match your source</span>
+      </div>
+      <div class="reminder-step">
+        <span class="step-num">5</span>
+        <span>Select your converted file and click <strong>Import logs</strong></span>
+      </div>
+    </div>
+    <div class="reminder-note">
+      ⚠ Skipping step 2 will cause tanooki to misread timecodes regardless of project FPS setting.
+    </div>
   </div>
 
 </div>
@@ -639,6 +746,9 @@ function setFps(btn) {
   const info  = FPS_MAP[`${btn.dataset.fps}-${btn.dataset.df}`];
   document.getElementById('fpsInfoText').textContent = info.note;
   document.getElementById('footerNote').textContent  = `HH:MM:SS;FF → HH:MM:SS.mmm · ${info.label}`;
+  // Update import reminder
+  document.getElementById('reminderFps').textContent = info.label.replace(' DF','').replace(' NDF','');
+  document.getElementById('reminderDf').textContent  = selectedDf ? 'ON' : 'OFF';
 }
 
 // ── DROP & INPUT ───────────────────────────────────────────────────
@@ -650,20 +760,21 @@ dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('dragover'
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('dragover');
-  addFiles(Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.txt')));
+  addFiles(Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.txt') || f.name.endsWith('.csv')));
 });
 fileInput.addEventListener('change', () => { addFiles(Array.from(fileInput.files)); fileInput.value=''; });
 
 function addFiles(list) {
   list.forEach(f => {
     if (files.find(x => x.file.name===f.name && x.file.size===f.size)) return;
-    const id = Date.now() + Math.random();
-    files.push({ id, file:f, status:'pending' });
+    const id   = Date.now() + Math.random();
+    const type = f.name.endsWith('.csv') ? 'CSV' : 'TXT';
+    files.push({ id, file:f, type, status:'pending' });
     const el = document.createElement('div');
     el.className = 'file-item';
     el.id = 'item-' + id;
     el.innerHTML = `
-      <span class="file-ext">TXT</span>
+      <span class="file-ext">${type}</span>
       <span class="file-name">${f.name}</span>
       <span class="file-badge queued" id="badge-${id}">Queued</span>
       <button class="remove-btn" onclick="removeFile(${id})">×</button>`;
@@ -693,10 +804,11 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   updateUI();
 });
 
-// ── TC CONVERSION ──────────────────────────────────────────────────
+// ── TIMECODE UTILS ─────────────────────────────────────────────────
 function pad(n, len=2) { return String(n).padStart(len,'0'); }
 
-function tcToMs(tc, fps) {
+// HH:MM:SS;FF (semicolon — TXT format)
+function tcSemiToMs(tc, fps) {
   const m = tc.match(/(\d{2}):(\d{2}):(\d{2});(\d{2})/);
   if (!m) return tc;
   const [,h,mn,s,ff] = m.map(Number);
@@ -704,7 +816,16 @@ function tcToMs(tc, fps) {
   return `${pad(h)}:${pad(mn)}:${pad(s)}.${pad(ms,3)}`;
 }
 
-// ── PARSE ──────────────────────────────────────────────────────────
+// HH:MM:SS:FF (all colons — CSV format)
+function tcColonToMs(tc, fps) {
+  const m = tc.trim().match(/(\d{2}):(\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return tc.trim();
+  const [,h,mn,s,ff] = m.map(Number);
+  const ms = Math.round(ff / fps * 1000);
+  return `${pad(h)}:${pad(mn)}:${pad(s)}.${pad(ms,3)}`;
+}
+
+// ── PARSE TXT ─────────────────────────────────────────────────────
 function parseTxt(text, fps) {
   const lines = text.split('\n');
   const rows  = [];
@@ -721,9 +842,9 @@ function parseTxt(text, fps) {
       const single = content.match(/^(\d{2}:\d{2}:\d{2};\d{2})\s*-\s*(.+)$/);
       let tcIn='', tcOut='', noteText='';
       if (range) {
-        tcIn=tcToMs(range[1],fps); tcOut=tcToMs(range[2],fps); noteText=range[3].trim();
+        tcIn=tcSemiToMs(range[1],fps); tcOut=tcSemiToMs(range[2],fps); noteText=range[3].trim();
       } else if (single) {
-        tcIn=tcToMs(single[1],fps); noteText=single[2].trim();
+        tcIn=tcSemiToMs(single[1],fps); noteText=single[2].trim();
       } else {
         noteText=content;
       }
@@ -733,7 +854,97 @@ function parseTxt(text, fps) {
   return rows;
 }
 
-// ── CSV ────────────────────────────────────────────────────────────
+// ── PARSE CSV ─────────────────────────────────────────────────────
+// Minimal RFC4180-ish CSV parser that handles quoted multiline fields
+function parseCsvText(raw) {
+  const rows = [];
+  let i = 0;
+  const len = raw.length;
+
+  function parseField() {
+    if (i < len && raw[i] === '"') {
+      i++; // skip opening quote
+      let val = '';
+      while (i < len) {
+        if (raw[i] === '"') {
+          if (raw[i+1] === '"') { val += '"'; i += 2; } // escaped quote
+          else { i++; break; }                           // closing quote
+        } else {
+          val += raw[i++];
+        }
+      }
+      return val;
+    }
+    let val = '';
+    while (i < len && raw[i] !== ',' && raw[i] !== '\n' && raw[i] !== '\r') {
+      val += raw[i++];
+    }
+    return val;
+  }
+
+  function parseRow() {
+    const fields = [];
+    while (i < len && raw[i] !== '\n' && raw[i] !== '\r') {
+      fields.push(parseField());
+      if (i < len && raw[i] === ',') i++;
+    }
+    // skip \r\n or \n
+    if (i < len && raw[i] === '\r') i++;
+    if (i < len && raw[i] === '\n') i++;
+    return fields;
+  }
+
+  while (i < len) {
+    const row = parseRow();
+    if (row.length > 0) rows.push(row);
+  }
+  return rows;
+}
+
+function parseCsv(text, fps) {
+  // Strip BOM
+  const raw = text.replace(/^\uFEFF/, '');
+  const allRows = parseCsvText(raw);
+  if (allRows.length < 2) return [];
+
+  // Detect columns by header
+  const header = allRows[0].map(h => h.trim().toLowerCase());
+  const col = name => header.findIndex(h => h.includes(name));
+
+  const iIn   = col('timecode in')  !== -1 ? col('timecode in')  : col('in');
+  const iOut  = col('timecode out') !== -1 ? col('timecode out') : col('out');
+  const iDur  = col('duration');
+  const iName = col('name');
+  const iSub  = col('subtitle') !== -1 ? col('subtitle') : col('text');
+
+  const rows = [];
+  for (let r = 1; r < allRows.length; r++) {
+    const row = allRows[r];
+    if (!row || row.length < 2) continue;
+
+    const rawIn  = iIn  >= 0 ? (row[iIn]  || '').trim() : '';
+    const rawOut = iOut >= 0 ? (row[iOut] || '').trim() : '';
+    const rawDur = iDur >= 0 ? (row[iDur] || '').trim() : '';
+    const name   = iName >= 0 ? (row[iName] || '').trim() : '';
+    let   text   = iSub >= 0 ? (row[iSub]  || '').trim() : '';
+
+    // Clean artefacts
+    text = text.replace(/^\uFEFF/, '').replace(/<end subtitles>/gi, '').trim();
+    if (!text) continue;
+
+    rows.push({
+      In:       rawIn  ? tcColonToMs(rawIn,  fps) : '',
+      Out:      rawOut ? tcColonToMs(rawOut, fps) : '',
+      Duration: rawDur ? tcColonToMs(rawDur, fps) : '',
+      Text:     text,
+      Speaker:  name,
+      Status:   ''
+    });
+  }
+  return rows;
+}
+
+// ── OUTPUT CSV ────────────────────────────────────────────────────
 function toCsv(rows) {
   const esc = v => (v.includes(',')||v.includes('"')||v.includes('\n'))
     ? '"'+v.replace(/"/g,'""')+'"' : v;
@@ -744,7 +955,7 @@ function toCsv(rows) {
 function dlCsv(filename, content) {
   const a = Object.assign(document.createElement('a'), {
     href: URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8;'})),
-    download: filename.replace(/\.txt$/i,'.csv')
+    download: filename.replace(/\.(txt|csv)$/i,'_tanooki.csv')
   });
   a.click();
 }
@@ -779,10 +990,11 @@ document.getElementById('convertBtn').addEventListener('click', async () => {
   for (const entry of files) {
     if (entry.status !== 'pending') continue;
     setBadge(entry.id, 'working', 'Converting…');
-    log(`Processing: ${entry.file.name}`, 'warn');
+    log(`Processing: ${entry.file.name} [${entry.type}]`, 'warn');
     try {
       const text = await entry.file.text();
-      const rows = parseTxt(text, fps);
+      const rows = entry.type === 'CSV' ? parseCsv(text, fps) : parseTxt(text, fps);
+
       if (!rows.length) {
         entry.status='error';
         setBadge(entry.id,'error','No data');
