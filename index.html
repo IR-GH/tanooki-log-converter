@@ -848,7 +848,7 @@ function parseTxt(text, fps) {
       } else {
         noteText=content;
       }
-      rows.push({In:tcIn, Out:tcOut, Duration:'', Text:noteText, Speaker:author, Status:''});
+      rows.push({In:tcIn, Out:tcOut, Duration:'', Text:noteText, Speaker:author||'Speaker 0', Status:''});
     } else { i++; }
   }
   return rows;
@@ -937,7 +937,7 @@ function parseCsv(text, fps) {
       Out:      rawOut ? tcColonToMs(rawOut, fps) : '',
       Duration: rawDur ? tcColonToMs(rawDur, fps) : '',
       Text:     text,
-      Speaker:  name,
+      Speaker:  name || 'Speaker 0',
       Status:   ''
     });
   }
@@ -975,7 +975,7 @@ function parseAvid(text, fps) {
         i++;
       }
       const text = textLines.join('\n').trim();
-      if (text) rows.push({ In: tcIn, Out: tcOut, Duration: '', Text: text, Speaker: '', Status: '' });
+      if (text) rows.push({ In: tcIn, Out: tcOut, Duration: '', Text: text, Speaker: 'Speaker 0', Status: '' });
     } else {
       i++;
     }
